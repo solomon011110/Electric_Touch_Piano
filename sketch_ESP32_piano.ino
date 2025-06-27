@@ -2,6 +2,8 @@
 
 #include "octave.h"
 
+AQM Cld;
+
 #define PIN_SPEAKER 17
 #define PIN_KEY_UP 18
 #define PIN_KEY_DOWN 5
@@ -36,6 +38,12 @@ SCL: 22
 CDA: 21
 
 */
+
+void setCLDNote(String s){
+    Cld.clear();
+    Cld.setCursor(0, 7);
+    Cld.writeChar(s);
+}
 
 void hello(){
     tone(PIN_SPEAKER, C6);
@@ -75,6 +83,7 @@ void setup() {
     attachInterrupt(PIN_KEY_UP, keyUp, FALLING);
     attachInterrupt(PIN_KEY_DOWN, keyDown, FALLING);
 
+    Cld.init();
     hello();
 }
 

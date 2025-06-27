@@ -4,7 +4,8 @@
 
 class AQM{
   private:
-  byte INITCMD[8][2] = {
+  int INITCMD[9][2] = {
+    {0x38, 1},
     {0x39, 1},
     {0x14, 1},
     {0x70, 1},
@@ -16,15 +17,17 @@ class AQM{
   };
 
   public:
-  void writeCMD(byte cmd);
+  void writeCMD(unsigned char  cmd);
 
-  void writeChar(byte c);
+  void writeChar(unsigned char  c);
 
-  void init(int row);
+  void writeString(String s);
+
+  void init();
 
   void clear();
 
   void setCursor(unsigned char x, unsigned char y);
 
 
-}
+};
