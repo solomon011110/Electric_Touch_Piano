@@ -39,13 +39,15 @@ CDA: 21
 
 */
 
-void setCLDNote(String s){
+void setCLDKey(){
+    //clearの内部処理のdelayが原因で、外部割込で使用するときにエラーを吐いている可能性
     Cld.clear();
-    Cld.setCursor(0, 7);
-    Cld.writeChar(s);
+    Cld.setCursor(0, 0);
+    Cld.writeString(OCTMARK[key]);
 }
 
 void hello(){
+    setCLDKey();
     tone(PIN_SPEAKER, C6);
     delay(198);// 152 1/8
     tone(PIN_SPEAKER, As5);
@@ -133,6 +135,7 @@ void loop() {
     After:
     noTone(PIN_SPEAKER);
     if(600 < (millis() - timePushedButton)){
+        if(isChangedKey){setCLDKey();}
         isChangedKey = false;
         timePushedButton = millis();
     }
