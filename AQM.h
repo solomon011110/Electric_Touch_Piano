@@ -4,8 +4,9 @@
 
 class AQM{
   private:
-  int INITCMD[9][2] = {
-    {0x38, 1},
+  int displayRow = 2;
+
+  int INITCMD[8][2] = {
     {0x39, 1},
     {0x14, 1},
     {0x70, 1},
@@ -17,17 +18,19 @@ class AQM{
   };
 
   public:
-  void writeCMD(unsigned char  cmd);
+  void setDisplayRow(int row); //row = 1~2
 
-  void writeChar(unsigned char  c);
+  void writeCMD(unsigned char cmd);
+
+  void writeChar(unsigned char c);
 
   void writeString(String s);
 
-  void init();
+  void begin();
 
   void clear();
 
-  void setCursor(unsigned char x, unsigned char y);
+  void setCursor(unsigned char x, unsigned char y); //y = 0~1, x = 0~7
 
 
 };

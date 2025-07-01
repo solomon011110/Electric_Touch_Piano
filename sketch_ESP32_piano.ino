@@ -2,17 +2,18 @@
 
 #include "octave.h"
 
-AQM Cld;
+AQM LCD;
 
 #define PIN_SPEAKER 17
 #define PIN_KEY_UP 18
 #define PIN_KEY_DOWN 5
+#define PIN_OCT_CHANGE 19
 #define THRESHOLD 36
 
-int key = 1;
+int key = 3;
+int oct = 0;
 unsigned long timePushedButton = 0;
-volatile int pushingNote = 0;
-volatile bool isChangedKey = false;
+volatile bool isPushedButton = false;
 
 /*
 ESP32
@@ -39,15 +40,21 @@ CDA: 21
 
 */
 
-void setCLDKey(){
-    //clearの内部処理のdelayが原因で、外部割込で使用するときにエラーを吐いている可能性
-    Cld.clear();
-    Cld.setCursor(0, 0);
-    Cld.writeString(OCTMARK[key]);
+void setLCDKey(){
+    LCD.clear();
+    LCD.setCursor(0, 0);
+    LCD.writeString(OCTMARK[key][0]);
+    LCD.setCursor(6, 1);
+    LCD.writeString(OCTMARK[key][1]);
+}
+
+void setLCDNote(int note){
+    LCD.setCursor(0, 1);
+    LCD.writeString(NOTEMARK[key][note]);
 }
 
 void hello(){
-    setCLDKey();
+    setLCDKey();
     tone(PIN_SPEAKER, C6);
     delay(198);// 152 1/8
     tone(PIN_SPEAKER, As5);
@@ -56,22 +63,32 @@ void hello(){
 }
 
 void checkOct(int n){
-    if(touchRead(T3) <= THRESHOLD){tone(PIN_SPEAKER, OCTAVE[key][1][n]);}
-    else{tone(PIN_SPEAKER, OCTAVE[key][0][n]);}
+    if(touchRead(T3) <= THRESHOLD){tone(PIN_SPEAKER, OCTAVE[key][(oct+1)%2][n]);}
+    else{tone(PIN_SPEAKER, OCTAVE[key][oct][n]);}
+
+    setLCDNote(n);
 }
 
 void IRAM_ATTR keyDown(){
-    if(!isChangedKey){
-    key = (key+(OCTSIZE-1))%(OCTSIZE);
-    isChangedKey = true;
+    if(!isPushedButton){
+        key = (key+(OCTSIZE-1))%(OCTSIZE);
+        isPushedButton = true;
     }
     timePushedButton = millis();
 }
 
 void IRAM_ATTR keyUp(){
-    if(!isChangedKey){
-    key = (key+1)%OCTSIZE;
-    isChangedKey = true;
+    if(!isPushedButton){
+        key = (key+1)%OCTSIZE;
+        isPushedButton = true;
+    }
+    timePushedButton = millis();
+}
+
+void IRAM_ATTR OctChange(){
+    if(!isPushedButton){
+        oct = (oct+1)%2;
+        isPushedButton = true;
     }
     timePushedButton = millis();
 }
@@ -81,62 +98,54 @@ void setup() {
     
     pinMode(PIN_KEY_UP, PULLUP);
     pinMode(PIN_KEY_DOWN, PULLUP);
+    pinMode(PIN_OCT_CHANGE, PULLUP);
 
     attachInterrupt(PIN_KEY_UP, keyUp, FALLING);
     attachInterrupt(PIN_KEY_DOWN, keyDown, FALLING);
+    attachInterrupt(PIN_OCT_CHANGE, OctChange, FALLING);
 
-    Cld.init();
+    LCD.begin();
     hello();
 }
 
 void loop() {
-    pushingNote = 0;
-    pushingNote = (touchRead(T9) <= THRESHOLD) ? 1:pushingNote;
-    pushingNote = (touchRead(T8) <= THRESHOLD) ? 2:pushingNote;
-    pushingNote = (touchRead(T7) <= THRESHOLD) ? 4:pushingNote;
-    pushingNote = (touchRead(T6) <= THRESHOLD) ? 8:pushingNote;
-    pushingNote = (touchRead(T5) <= THRESHOLD) ? 16:pushingNote;
-    pushingNote = (touchRead(T4) <= THRESHOLD) ? 32:pushingNote;
-    pushingNote = (touchRead(T0) <= THRESHOLD) ? 64:pushingNote;
-
-    switch (pushingNote) {
-        case 1:{
-            checkOct(0);
-            while(true){if(THRESHOLD<touchRead(T9)){goto After;}}
-        }
-        case 2:{
-            checkOct(1);
-            while(true){if(THRESHOLD<touchRead(T8)){goto After;}}
-        }
-        case 4:{
-            checkOct(2);
-            while(true){if(THRESHOLD<touchRead(T7)){goto After;}}
-        }
-        case 8:{
-            checkOct(3);
-            while(true){if(THRESHOLD<touchRead(T6)){goto After;}}
-        }
-        case 16:{
-            checkOct(4);
-            while(true){if(THRESHOLD<touchRead(T5)){goto After;}}
-        }
-        case 32:{
-            checkOct(5);
-            while(true){if(THRESHOLD<touchRead(T4)){goto After;}}
-        }
-        case 64:{
-            checkOct(6);
-            while(true){if(THRESHOLD<touchRead(T0)){goto After;}}
-        }
-        default:{
-            break;
-        }
+    if(touchRead(T2) <= THRESHOLD){
+        checkOct(7);
+        while(true){if(THRESHOLD<touchRead(T2)){break;}}
     }
-    After:
+    else if(touchRead(T4) <= THRESHOLD){
+        checkOct(6);
+        while(true){if(THRESHOLD<touchRead(T4)){break;}}
+    }
+    else if(touchRead(T5) <= THRESHOLD){
+        checkOct(5);
+        while(true){if(THRESHOLD<touchRead(T5)){break;}}
+    }
+    else if(touchRead(T6) <= THRESHOLD){
+        checkOct(4);
+        while(true){if(THRESHOLD<touchRead(T6)){break;}}
+    }
+    else if(touchRead(T7) <= THRESHOLD){
+        checkOct(3);
+        while(true){if(THRESHOLD<touchRead(T7)){break;}}
+    }
+    else if(touchRead(T8) <= THRESHOLD){
+        checkOct(2);
+        while(true){if(THRESHOLD<touchRead(T8)){break;}}
+    }
+    else if(touchRead(T9) <= THRESHOLD){
+        checkOct(1);
+        while(true){if(THRESHOLD<touchRead(T9)){break;}}
+    }
+    else if(touchRead(T0) <= THRESHOLD){
+        checkOct(0);
+        while(true){if(THRESHOLD<touchRead(T0)){break;}}
+    }
+
     noTone(PIN_SPEAKER);
-    if(600 < (millis() - timePushedButton)){
-        if(isChangedKey){setCLDKey();}
-        isChangedKey = false;
+    if( isPushedButton && (255 < (millis() - timePushedButton)) ){
+        setLCDKey();
+        isPushedButton = false;
         timePushedButton = millis();
     }
 }
