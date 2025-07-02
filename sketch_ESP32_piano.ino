@@ -11,11 +11,8 @@ AQM LCD;
 int key = 7;
 int oct = 0;
 int scale = 0;
-String notemark[8] = {"C","D","E","F","G","A","B","C"};
-int OCTAVE[2][8] = {//C
-  {262,294,330,349,392,440,494,523},
-  {523,587,659,698,784,880,988,1047}
-};
+String notemark[8];
+int OCTAVE[2][8];
 volatile unsigned long timePushedButton = 0;
 volatile bool isPushedButton = false;
 
@@ -47,11 +44,6 @@ void setKey(int keyIndex, int isMinorScale){
             index = index + SCALE[isMinorScale][j];
     }
   }
-    Serial.println(OCTAVE[0][0]);
-    Serial.println(OCTAVE[0][7]);
-    Serial.println(OCTAVE[1][0]);
-    Serial.println(OCTAVE[1][7]);
-    
     setNotemark(keyIndex, scale);
 }
 
@@ -79,14 +71,9 @@ void setLCDNote(int note){
 }
 
 void hello(){
-    setLCDKey();
     tone(PIN_SPEAKER, NOTE[31]); delay(198);// 152 1/8
     tone(PIN_SPEAKER, NOTE[29]); delay(297);// 152 1/8.
     noTone(PIN_SPEAKER);
-    Serial.println(OCTAVE[0][0]);
-    Serial.println(OCTAVE[0][7]);
-    Serial.println(OCTAVE[1][0]);
-    Serial.println(OCTAVE[1][7]);
 }
 
 void playNote(int n){
@@ -134,7 +121,10 @@ void setup() {
     attachInterrupt(PIN_SCALE_CHANGE, scaleChange, FALLING);
 
     LCD.begin();
-    Serial.begin(115200); 
+
+    setKey(key,scale);
+    setLCDKey();
+    
     hello();
 }
 
